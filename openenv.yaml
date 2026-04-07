@@ -1,0 +1,12 @@
+name: email_triage_env
+version: 1.0.0
+
+entrypoint: env:EmailEnv
+
+tasks:
+  - name: easy
+    description: Classify email category
+  - name: medium
+    description: Classify email + priority
+  - name: hard
+    description: Full triage (category + priority + reply)
