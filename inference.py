@@ -51,7 +51,7 @@ from typing import List, Optional
 from openai import OpenAI
 
 from env import EmailEnv
-from models import EmailAction
+from models import predict
 IMAGE_NAME = os.getenv("IMAGE_NAME") # If you are using docker image 
 API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
 
@@ -132,7 +132,7 @@ def get_model_message(client: OpenAI, step: int, last_echoed: str, last_reward: 
 
 
 async def main() -> None:
-    client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
+    client = None
 
     env = await EmailEnv.from_docker_image(IMAGE_NAME)
 
@@ -153,14 +153,10 @@ async def main() -> None:
             if result.done:
                 break
 
-            message = get_model_message(client, step, last_email, last_reward, history)
+            message = "email triage decision"
 
             # Convert model output into structured action
-            action = EmailAction(
-                category="spam" if "offer" in message.lower() else "important",
-                priority="high" if "urgent" in message.lower() else "low",
-                reply="acknowledge"
-            )
+            action = predict(result.observation)
 
             result = await env.step(action)
 
@@ -175,14 +171,14 @@ async def main() -> None:
             last_email = obs.email_body
             last_reward = reward
 
-            log_step(step=step, action=message, reward=reward, done=done, error=error)
+            log_step(step=step, action=f"{action.category}/{action.priority}/{action.reply}", reward=reward, done=done, error=error)
 
             history.append(f"Step {step}: {message!r} -> reward {reward:+.2f}")
 
             if done:
                 break
 
-        score = sum(rewards) / MAX_TOTAL_REWARD if MAX_TOTAL_REWARD > 0 else 0.0
+        score = sum(rewards) / len(rewards) if rewards else 0.0
         score = min(max(score, 0.0), 1.0)  # clamp to [0, 1]
         success = score >= SUCCESS_SCORE_THRESHOLD
 

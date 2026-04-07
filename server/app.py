@@ -27,6 +27,10 @@ async def step(action: ActionRequest):
     result = await env.step(action_obj)
     return result.model_dump()
 
+@app.get("/")
+def home():
+    return {"message": "Email Triage API is running"}
+
 
 # ✅ REQUIRED main function
 def main():
