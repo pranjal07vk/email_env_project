@@ -18,14 +18,14 @@ class ActionRequest(BaseModel):
 @app.post("/reset")
 async def reset():
     result = await env.reset()
-    return result.dict()
+    return result.model_dump()
 
 
 @app.post("/step")
 async def step(action: ActionRequest):
     action_obj = EmailAction(**action.dict())
     result = await env.step(action_obj)
-    return result.dict()
+    return result.model_dump()
 
 
 # ✅ REQUIRED main function
