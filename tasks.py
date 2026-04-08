@@ -1,10 +1,17 @@
-# tasks.py
+"""
+Email Triage Tasks
+=================
 
-# Each task contains:
-# - emails (data)
-# - weights (for grading)
+Defines tasks of varying difficulty for the Email Triage environment.
+Each task contains:
+- emails: sample emails for the task
+- weights: grading weights for fields (category, priority, reply)
+"""
 
 TASKS = {
+    # -------------------------
+    # EASY TASK
+    # -------------------------
     "easy": {
         "emails": [
             {
@@ -38,11 +45,13 @@ TASKS = {
                 }
             }
         ],
-        "weights": {
-            "category": 1.0
-        }
+        "weights": {"category": 1.0},  # only category matters for scoring
     },
 
+
+    # -------------------------
+    # MEDIUM TASK
+    # -------------------------
     "medium": {
         "emails": [
             {
@@ -82,6 +91,10 @@ TASKS = {
         }
     },
 
+
+    # -------------------------
+    # HARD TASK
+    # -------------------------
     "hard": {
         "emails": [
             {

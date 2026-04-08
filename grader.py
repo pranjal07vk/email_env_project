@@ -1,9 +1,24 @@
+"""
+Grader Module
+=============
+Provides scoring functionality for tasks in the Email Triage environment.
+Also defines TASK_GRADERS mapping for all supported tasks.
+"""
+
 from tasks import TASKS
 
 
 def grade(task_name: str, action: dict, correct: dict) -> float:
     """
-    Returns score between 0.0 and 1.0
+    Compute a normalized score for a given action compared to the correct answer.
+
+    Args:
+        task_name (str): Name of the task ('easy', 'medium', 'hard').
+        action (dict): Action performed by the user/model.
+        correct (dict): Correct action for this email.
+
+    Returns:
+        float: Score between 0.01 and 0.99.
     """
 
     task = TASKS.get(task_name)
@@ -18,7 +33,7 @@ def grade(task_name: str, action: dict, correct: dict) -> float:
         if field in action and action[field] == correct.get(field):
             score += weight
 
-    # clamp to [0,1]
+    # Clamp score to (0, 1)
     if score >= 1.0:
         score = 0.99
     elif score <= 0.0:
@@ -26,6 +41,7 @@ def grade(task_name: str, action: dict, correct: dict) -> float:
 
     return score
 
+# Mapping of tasks to grader functions
 TASK_GRADERS = {
     "easy": grade,
     "medium": grade,

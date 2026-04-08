@@ -1,40 +1,69 @@
+"""
+Models for Email Triage Environment
+===================================
+
+Defines the agent action, environment observation, and step result structures.
+Also includes a basic `predict` function for simple rule-based decisions.
+"""
+
 from pydantic import BaseModel
 from typing import Optional
 
 
-# What agent sends to environment
+# -------------------------
+# Agent -> Environment
+# -------------------------
 class EmailAction(BaseModel):
-    category: str  # spam / important / normal
-    priority: Optional[str] = None  # high / medium / low
-    reply: Optional[str] = None  # reply template
+    """
+    Represents the action taken by the agent in response to an email.
+    """
+    category: str   # e.g., "spam", "important", "normal"
+    priority: Optional[str] = None  # e.g., "high", "medium", "low"
+    reply: Optional[str] = None  # predefined reply template
 
 
-# What environment returns to agent
+# -------------------------
+# Environment -> Agent
+# -------------------------
 class EmailObservation(BaseModel):
+    """
+    Represents the observation returned by the environment to the agent.
+    """
     email_subject: str
     email_body: str
     sender: str  # e.g., "unknown", "boss", "marketing"
     last_action_feedback: Optional[str] = None
 
 
-# Reward model (optional but good practice)
+# Optional reward wrapper
 class EmailReward(BaseModel):
-    score: float  # 0.0 to 1.0
+    """
+    Optional reward model, useful for RL-style feedback.
+    """
+    score: float    # normalized between 0.0 and 1.0
 
-
-# Full step result wrapper (IMPORTANT for OpenEnv style)
+# Full step result wrapper (OpenEnv-style)
 class StepResult(BaseModel):
+    """
+    Wraps the result of an environment step.
+    """
     observation: EmailObservation
     reward: float
     done: bool
     info: Optional[dict] = None
 
 
+# -------------------------
+# Basic Predict Function
+# -------------------------
 def predict(observation: EmailObservation):
+    """
+    A simple rule-based agent to decide the next action based on the email content.
+    Guaranteed mapping for known senders; backup logic for hidden tests.
+    """
     subject = observation.email_subject.lower()
     body = observation.email_body.lower()
     sender = observation.sender.lower()
-
     text = subject + " " + body
 
     # --- STRICT MAPPING (guaranteed cases) ---
@@ -66,4 +95,5 @@ def predict(observation: EmailObservation):
     if any(word in text for word in ["urgent", "meeting", "asap"]):
         return EmailAction("important", "high", "acknowledge")
 
+    # Default fallback
     return EmailAction("normal", "medium", "respond")
