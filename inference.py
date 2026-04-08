@@ -52,6 +52,7 @@ from openai import OpenAI
 
 from env import EmailEnv
 from models import predict
+from grader import TASK_GRADERS
 IMAGE_NAME = os.getenv("IMAGE_NAME") # If you are using docker image 
 API_KEY = os.getenv("API_KEY")
 
@@ -137,60 +138,62 @@ async def main() -> None:
         api_key=os.environ.get("API_KEY", "dummy")
     )
 
-    env = await EmailEnv.from_docker_image(IMAGE_NAME)
 
-    history: List[str] = []
-    rewards: List[float] = []
-    steps_taken = 0
-    score = 0.0
-    success = False
 
-    log_start(task=TASK_NAME, env=BENCHMARK, model=MODEL_NAME)
+    for TASK_NAME in TASK_GRADERS.keys():  # ensures all 3 tasks run
+        history: List[str] = [] 
+        rewards: List[float] = []
+        steps_taken = 0
+        score = 0.0
+        success = False
 
-    try:
-        result = await env.reset() # OpenENV.reset()
-        last_email = result.observation.email_body
-        last_reward = 0.0
+        env = await EmailEnv.from_docker_image(IMAGE_NAME)
+        log_start(task=TASK_NAME, env=BENCHMARK, model=MODEL_NAME)
 
-        for step in range(1, MAX_STEPS + 1):
-            if result.done:
-                break
+        try:
+            result = await env.reset() # OpenENV.reset()
+            last_email = result.observation.email_body
+            last_reward = 0.0
 
-            message = get_model_message(client, step, last_email, last_reward, history)
+            for step in range(1, MAX_STEPS + 1):
+                if result.done:
+                    break
+
+                message = get_model_message(client, step, last_email, last_reward, history)
 
             # Convert model output into structured action
-            action = predict(result.observation)
+                action = predict(result.observation)
 
-            result = await env.step(action)
+                result = await env.step(action)
 
-            obs = result.observation
+                obs = result.observation
 
-            reward = result.reward or 0.0
-            done = result.done
-            error = None
+                reward = result.reward or 0.0
+                done = result.done
+                error = None
 
-            rewards.append(reward)
-            steps_taken = step
-            last_email = obs.email_body
-            last_reward = reward
+                rewards.append(reward)
+                steps_taken = step
+                last_email = obs.email_body
+                last_reward = reward
 
-            log_step(step=step, action=f"{action.category}/{action.priority}/{action.reply}", reward=reward, done=done, error=error)
+                log_step(step=step, action=f"{action.category}/{action.priority}/{action.reply}", reward=reward, done=done, error=error)
 
-            history.append(f"Step {step}: {message!r} -> reward {reward:+.2f}")
+                history.append(f"Step {step}: {message!r} -> reward {reward:+.2f}")
 
-            if done:
-                break
+                if done:
+                    break
 
-        score = sum(rewards) / len(rewards) if rewards else 0.0
-        score = min(max(score, 0.0), 1.0)  # clamp to [0, 1]
-        success = score >= SUCCESS_SCORE_THRESHOLD
+            score = sum(rewards) / len(rewards) if rewards else 0.0
+            score = min(max(score, 0.0), 1.0)  # clamp to [0, 1]
+            success = score >= SUCCESS_SCORE_THRESHOLD
 
-    finally:
-        try:
-            await env.close()
-        except Exception as e:
-            print(f"[DEBUG] env.close() error (container cleanup): {e}", flush=True)
-        log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
+        finally:
+            try:
+                await env.close()
+            except Exception as e:
+                print(f"[DEBUG] env.close() error (container cleanup): {e}", flush=True)
+            log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
 
 
 if __name__ == "__main__":
