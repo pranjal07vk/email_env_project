@@ -53,7 +53,7 @@ from openai import OpenAI
 from env import EmailEnv
 from models import predict
 IMAGE_NAME = os.getenv("IMAGE_NAME") # If you are using docker image 
-API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
+API_KEY = os.getenv("API_KEY")
 
 API_BASE_URL = os.getenv("API_BASE_URL") or "https://router.huggingface.co/v1"
 MODEL_NAME = os.getenv("MODEL_NAME") or "Qwen/Qwen2.5-72B-Instruct"
@@ -132,7 +132,10 @@ def get_model_message(client: OpenAI, step: int, last_echoed: str, last_reward: 
 
 
 async def main() -> None:
-    client = None
+    client = OpenAI(
+        base_url=os.environ.get("API_BASE_URL", "https://router.huggingface.co/v1"),
+        api_key=os.environ.get("API_KEY", "dummy")
+    )
 
     env = await EmailEnv.from_docker_image(IMAGE_NAME)
 
@@ -153,7 +156,7 @@ async def main() -> None:
             if result.done:
                 break
 
-            message = "email triage decision"
+            message = get_model_message(client, step, last_email, last_reward, history)
 
             # Convert model output into structured action
             action = predict(result.observation)
