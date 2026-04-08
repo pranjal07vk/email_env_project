@@ -1,7 +1,14 @@
-🐨 Email Triage Environment
-Color Theme: Pink → Red
-SDK: Docker (optional)
+---
+title: Email Triage Env
+emoji: 🐨
+colorFrom: pink
+colorTo: red
+sdk: docker
+pinned: false
+---
+
 Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
+
 
 Overview
 
