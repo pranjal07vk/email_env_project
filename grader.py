@@ -25,3 +25,9 @@ def grade(task_name: str, action: dict, correct: dict) -> float:
         score = 0.01
 
     return score
+
+TASK_GRADERS = {
+    "easy": grade,
+    "medium": grade,
+    "hard": grade
+}
