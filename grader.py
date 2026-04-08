@@ -9,7 +9,7 @@ def grade(task_name: str, action: dict, correct: dict) -> float:
     task = TASKS.get(task_name)
 
     if not task:
-        return 0.0
+        return 0.01
 
     score = 0.0
     weights = task["weights"]
@@ -19,4 +19,9 @@ def grade(task_name: str, action: dict, correct: dict) -> float:
             score += weight
 
     # clamp to [0,1]
-    return min(max(score, 0.0), 1.0)
+    if score >= 1.0:
+        score = 0.99
+    elif score <= 0.0:
+        score = 0.01
+
+    return score

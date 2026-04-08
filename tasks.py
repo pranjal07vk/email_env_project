@@ -1,17 +1,81 @@
-# Defines different difficulty levels
+# tasks.py
+
+# Each task contains:
+# - emails (data)
+# - weights (for grading)
 
 TASKS = {
     "easy": {
-        "description": "Classify email as spam, important, or normal",
-        "required_fields": ["category"],
+        "emails": [
+            {
+                "subject": "Win a FREE iPhone now!!!",
+                "body": "Click this link to claim your prize",
+                "sender": "marketing",
+                "correct": {
+                    "category": "spam",
+                    "priority": "low",
+                    "reply": "ignore"
+                }
+            },
+            {
+                "subject": "Meeting with CEO",
+                "body": "Urgent meeting tomorrow",
+                "sender": "boss",
+                "correct": {
+                    "category": "important",
+                    "priority": "high",
+                    "reply": "acknowledge"
+                }
+            },
+            {
+                "subject": "Lunch plan",
+                "body": "Are you free for lunch?",
+                "sender": "friend",
+                "correct": {
+                    "category": "normal",
+                    "priority": "medium",
+                    "reply": "respond"
+                }
+            }
+        ],
         "weights": {
             "category": 1.0
         }
     },
 
     "medium": {
-        "description": "Classify email + assign priority",
-        "required_fields": ["category", "priority"],
+        "emails": [
+            {
+                "subject": "Project deadline",
+                "body": "The deadline for the project is next week",
+                "sender": "manager",
+                "correct": {
+                    "category": "important",
+                    "priority": "high",
+                    "reply": "acknowledge"
+                }
+            },
+            {
+                "subject": "Team lunch",
+                "body": "Let's have a team lunch on Friday",
+                "sender": "team_lead",
+                "correct": {
+                    "category": "normal",
+                    "priority": "medium",
+                    "reply": "respond"
+                }
+            },
+            {
+                "subject": "Discount offer just for you",
+                "body": "Get 50% off on all items",
+                "sender": "marketing",
+                "correct": {
+                    "category": "spam",
+                    "priority": "low",
+                    "reply": "ignore"
+                }
+            }
+        ],
         "weights": {
             "category": 0.6,
             "priority": 0.4
@@ -19,8 +83,38 @@ TASKS = {
     },
 
     "hard": {
-        "description": "Classify email + priority + reply",
-        "required_fields": ["category", "priority", "reply"],
+        "emails": [
+            {
+                "subject": "Client escalation",
+                "body": "Client is unhappy, needs immediate response",
+                "sender": "manager",
+                "correct": {
+                    "category": "important",
+                    "priority": "high",
+                    "reply": "acknowledge"
+                }
+            },
+            {
+                "subject": "Weekend trip plan",
+                "body": "Shall we go for a trip this weekend?",
+                "sender": "friend",
+                "correct": {
+                    "category": "normal",
+                    "priority": "medium",
+                    "reply": "respond"
+                }
+            },
+            {
+                "subject": "You won a lottery!",
+                "body": "Claim your money now by clicking here",
+                "sender": "unknown",
+                "correct": {
+                    "category": "spam",
+                    "priority": "low",
+                    "reply": "ignore"
+                }
+            }
+        ],
         "weights": {
             "category": 0.5,
             "priority": 0.3,

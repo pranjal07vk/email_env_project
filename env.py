@@ -17,38 +17,8 @@ class EmailEnv:
     async def reset(self) -> StepResult:
         self.done = False
 
-        emails = [
-            {
-                "subject": "Win a FREE iPhone now!!!",
-                "body": "Click this link to claim your prize",
-                "sender": "marketing",
-                "correct": {
-                    "category": "spam",
-                    "priority": "low",
-                    "reply": "ignore"
-                }
-            },
-            {
-                "subject": "Meeting with CEO",
-                "body": "We have an urgent meeting tomorrow",
-                "sender": "boss",
-                "correct": {
-                    "category": "important",
-                    "priority": "high",
-                    "reply": "acknowledge"
-                }
-            },
-            {
-                "subject": "Lunch plan",
-                "body": "Are you free for lunch today?",
-                "sender": "friend",
-                "correct": {
-                    "category": "normal",
-                    "priority": "medium",
-                    "reply": "respond"
-                }
-            }
-        ]
+        task_data = TASKS[self.task_name]
+        emails = task_data["emails"]
 
         self.current_email = random.choice(emails)
         self.correct_answer = self.current_email["correct"]
