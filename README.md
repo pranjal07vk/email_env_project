@@ -10,19 +10,42 @@ pinned: false
 Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
 
 
-Overview
+## Overview
 
-Email Triage Env is a lightweight environment for testing automated email triage agents. The environment simulates a simple inbox with emails of varying importance and types. Your agent’s task is to classify each email as spam, important, or normal, assign a priority, and optionally provide a reply action.
+Email Triage Env is a **sequential decision-making environment** designed to evaluate intelligent agents in realistic inbox management scenarios.
 
-The environment provides rewards based on correct classification, making it suitable for reinforcement learning or rule-based AI experiments.
+Unlike simple classification tasks, this environment requires agents to:
 
-This project includes:
+- Process multiple emails within a single episode
+- Make context-aware decisions under uncertainty
+- Balance trade-offs between urgency, importance, and relevance
+- Handle ambiguous and noisy real-world email patterns
 
-A REST API (FastAPI) for interacting with the environment.
-An inference script that demonstrates automated interaction with the environment using a language model.
-Predefined tasks of different difficulty levels: easy, medium, and hard.
-Grading logic that scores actions based on accuracy.
+The environment is specifically designed for:
+- Reinforcement Learning experimentation
+- LLM-based decision-making systems
+- Human-like reasoning under partial information
 
+Each episode simulates a mini inbox, where incorrect decisions (e.g., missing urgent emails or responding to spam) result in penalties, making the task non-trivial and strategy-dependent.
+
+## Key Features
+
+- **Multi-step Episodes**  
+  Agents process 3–5 emails sequentially in a single episode.
+
+- **Stateful Environment**  
+  Decisions affect cumulative reward across the episode.
+
+- **Reward + Penalty System**  
+  - Missing important emails → penalty  
+  - Responding to spam → penalty  
+  - Incorrect prioritization → penalty  
+
+- **Ambiguous & Realistic Emails**  
+  Includes uncertain and noisy inputs that require reasoning, not just keyword matching.
+
+- **LLM-Compatible Design**  
+  Supports structured LLM outputs for decision-making pipelines.
 
 Project Structure
 .
@@ -111,23 +134,29 @@ Score is normalized to [0.0, 1.0].
 Episode is considered successful if score ≥ 0.1.
 
 
-Example Agent Logic
+## 🤖 Agent Design
 
-models.py provides a simple rule-based agent:
+The environment supports both rule-based and LLM-based agents.
 
-    if sender == "marketing":
-        return EmailAction("spam", "low", "ignore")
-    elif sender == "boss":
-        return EmailAction("important", "high", "acknowledge")
-    else:
-        return EmailAction("normal", "medium", "respond")
+The provided `inference.py` demonstrates:
+- LLM-driven decision making
+- Structured parsing of model outputs into actions
+- Robust fallback handling for invalid responses
 
-You can replace this logic with a custom AI model or LLM using inference.py.
+Agents are expected to interpret email context and produce:
+
+category: spam / important / normal  
+priority: high / medium / low  
+reply: ignore / acknowledge / respond
 
 
-Notes
+## Conclusion
 
-The project is hackathon-ready: includes environment, API, example inference, grading, and tasks.
-Optional Docker support: use EmailEnv.from_docker_image(image_name) if you want containerized execution.
-Keep inference.py and API logs visible during judging for validation.
+This environment goes beyond simple classification tasks by introducing:
+
+- Sequential decision making
+- Real-world ambiguity
+- Strategy-dependent rewards
+
+It provides a lightweight yet expressive testbed for evaluating intelligent agents in practical scenarios.
 

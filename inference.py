@@ -20,7 +20,7 @@ from email.mime import message
 from openai import OpenAI
 
 from env import EmailEnv
-from models import predict
+from models import predict, EmailAction
 from grader import TASK_GRADERS
 
 # -------------------------
@@ -44,15 +44,22 @@ _MAX_REWARD_PER_STEP = MAX_TOKENS * 0.1
 MAX_TOTAL_REWARD = MAX_STEPS * _MAX_REWARD_PER_STEP
 
 # System prompt guiding the model
-SYSTEM_PROMPT = textwrap.dedent(
-    """
-    You are interacting with a simple echo environment.
-    Each turn you must send a message. The environment will echo it back.
-    Reward is proportional to message length: reward = len(message) * 0.1
-    Your goal is to maximize total reward by sending meaningful, substantive messages.
-    Reply with exactly one message string — no quotes, no prefixes, just the message text.
-    """
-).strip()
+SYSTEM_PROMPT = """
+    You are an email triage assistant.
+
+    Given an email, decide:
+    - category: spam / important / normal
+    - priority: high / medium / low
+    - reply: ignore / acknowledge / respond
+
+    Output STRICTLY in this format:
+
+    category: <value>
+    priority: <value>
+    reply: <value>
+
+    No extra text.
+""".strip()
 
 
 # -------------------------
@@ -117,6 +124,28 @@ def get_model_message(client: OpenAI, step: int, last_echoed: str, last_reward: 
     except Exception as exc:
         print(f"[DEBUG] Model request failed: {exc}", flush=True)
         return "hello"
+    
+    
+# -------------------------
+# LLM Output → Structured Action
+# -------------------------
+def parse_llm_output(text: str):
+    try:
+        lines = text.lower().splitlines()
+        data = {}
+
+        for line in lines:
+            if ":" in line:
+                key, value = line.split(":", 1)
+                data[key.strip()] = value.strip()
+
+        return EmailAction(
+            category=data.get("category", "normal"),
+            priority=data.get("priority", "medium"),
+            reply=data.get("reply", "respond"),
+        )
+    except Exception:
+        return EmailAction("normal", "medium", "respond")
 
 
 # -------------------------
@@ -153,10 +182,12 @@ async def main() -> None:
                     break
                 
                 # Generate next message
-                message = get_model_message(client, step, last_email, last_reward, history)
+                llm_output = get_model_message(client, step, last_email, last_reward, history)
+                action = parse_llm_output(llm_output)
 
                 # Convert model output to structured action
-                action = predict(result.observation)
+                llm_output = get_model_message(client, step, last_email, last_reward, history)
+                action = parse_llm_output(llm_output)
 
                 # Take step in environment
                 result = await env.step(action)
@@ -174,7 +205,7 @@ async def main() -> None:
 
                 log_step(step=step, action=f"{action.category}/{action.priority}/{action.reply}", reward=reward, done=done, error=error)
 
-                history.append(f"Step {step}: {message!r} -> reward {reward:+.2f}")
+                history.append(f"Step {step}: {llm_output!r} -> reward {reward:+.2f}")
 
                 if done:
                     break

@@ -6,7 +6,7 @@ Supports async reset and step methods for OpenENV compatibility.
 """
 
 import random
-from typing import Optional
+from typing import Optional, List
 
 from models import EmailAction, EmailObservation, StepResult
 from tasks import TASKS
@@ -20,10 +20,12 @@ class EmailEnv:
     """
 
     def __init__(self, task_name: str = "easy"):
-        self.current_email = None
-        self.correct_answer = None
-        self.done = False
         self.task_name = task_name
+        self.done = False
+        self.inbox: List[dict] = []
+        self.current_index = 0
+        self.correct_answers: List[dict] = []
+        self.total_reward = 0.0
 
     # -----------------------------
     # Reset environment
@@ -34,23 +36,19 @@ class EmailEnv:
         Returns an initial StepResult with observation.
         """
         self.done = False
+        self.current_index = 0
+        self.total_reward = 0.0
 
         task_data = TASKS[self.task_name]
         emails = task_data["emails"]
 
-        # Pick a random email for this episode
-        self.current_email = random.choice(emails)
-        self.correct_answer = self.current_email["correct"]
-
-        obs = EmailObservation(
-            email_subject=self.current_email["subject"],
-            email_body=self.current_email["body"],
-            sender=self.current_email["sender"],
-            last_action_feedback=f"Task: {self.task_name}"
-        )
+        # Pick a multiple emails for this episode
+        k = random.randint(3, min(5, len(emails)))
+        self.inbox = random.sample(emails, k)
+        self.correct_answers = [email["correct"] for email in self.inbox]
 
         return StepResult(
-            observation=obs,
+            observation=self._get_obs(f"Task: {self.task_name} | Email 1/{len(self.inbox)}"),
             reward=0.0,
             done=False,
             info={"task": self.task_name}
@@ -71,22 +69,57 @@ class EmailEnv:
                 done=True,
                 info={}
             )
+        
+        current_email = self.inbox[self.current_index]
+        correct = self.correct_answers[self.current_index]
 
         # Convert action to dict for grading
-        action_dict = action.dict()
+        action_dict = action.model_dump()
 
         # Compute reward using grader
         reward = grade(self.task_name, action_dict, self.correct_answer)
 
-        self.done = True
+        penalty = 0.0
 
-        feedback = f"Correct: {self.correct_answer} | Your Score: {reward:.2f}"
+        if correct["category"] == "important" and action_dict.get("category") != "important":
+            penalty -= 0.3
+
+        # replied to spam
+        if correct["category"] == "spam" and action_dict.get("reply") not in ["ignore", None]:
+            penalty -= 0.2
+
+        # wrong priority for urgent
+        if correct.get("priority") == "high" and action_dict.get("priority") != "high":
+            penalty -= 0.2
+
+        reward = max(0.01, min(0.99, reward + penalty))
+
+        self.total_reward += reward
+        self.current_index += 1
+
+        if self.current_index >= len(self.inbox):
+            self.done = True
+
+        feedback = f"Step {self.current_index}: reward={reward:.2f}"
 
         return StepResult(
             observation=self._get_obs(feedback),
             reward=reward,
-            done=True,
+            done=self.done,
             info={"task": self.task_name}
+        )
+    
+    # -----------------------------
+    # Helper to build observation
+    # -----------------------------
+    def _get_obs(self, feedback: Optional[str]) -> EmailObservation:
+        current_email = self.inbox[self.current_index]
+
+        return EmailObservation(
+            email_subject=current_email["subject"],
+            email_body=current_email["body"],
+            sender=current_email["sender"],
+            last_action_feedback=feedback
         )
 
     # -----------------------------
@@ -94,22 +127,11 @@ class EmailEnv:
     # -----------------------------
     def state(self) -> dict:
         return {
-            "email": self.current_email,
-            "correct": self.correct_answer,
+            "inbox": self.inbox,
+            "current_index": self.current_index,
             "done": self.done,
             "task": self.task_name
         }
-
-    # -----------------------------
-    # Helper to build observation
-    # -----------------------------
-    def _get_obs(self, feedback: Optional[str]) -> EmailObservation:
-        return EmailObservation(
-            email_subject=self.current_email["subject"],
-            email_body=self.current_email["body"],
-            sender=self.current_email["sender"],
-            last_action_feedback=feedback
-        )
 
     # -----------------
     # Close environment 

@@ -83,6 +83,26 @@ TASKS = {
                     "priority": "low",
                     "reply": "ignore"
                 }
+            },
+            {
+                "subject": "Quick question",
+                "body": "Hey, can you take a look when you have time?",
+                "sender": "manager",
+                "correct": {
+                    "category": "important",
+                    "priority": "medium",
+                    "reply": "respond"
+                }
+            },
+            {
+                "subject": "Collaboration opportunity",
+                "body": "We would love to partner with you. Click here to know more.",
+                "sender": "unknown",
+                "correct": {
+                    "category": "spam",
+                    "priority": "low",
+                    "reply": "ignore"
+                }
             }
         ],
         "weights": {
@@ -123,6 +143,36 @@ TASKS = {
                 "sender": "unknown",
                 "correct": {
                     "category": "spam",
+                    "priority": "low",
+                    "reply": "ignore"
+                }
+            },
+            {
+                "subject": "Quick question",
+                "body": "Hey, can you take a look when you have time?",
+                "sender": "manager",
+                "correct": {
+                "category": "important",
+                    "priority": "medium",
+                    "reply": "respond"
+                }
+            },
+            {
+                "subject": "Need your help",
+                "body": "I'm stuck with something urgent, please respond ASAP",
+                "sender": "friend",
+                "correct": {
+                    "category": "important",
+                    "priority": "high",
+                    "reply": "respond"
+                }
+            },
+            {
+                "subject": "Update",
+                "body": "Sharing this for your reference.",
+                "sender": "team_lead",
+                "correct": {
+                    "category": "normal",
                     "priority": "low",
                     "reply": "ignore"
                 }
