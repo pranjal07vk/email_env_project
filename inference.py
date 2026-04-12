@@ -15,21 +15,24 @@ import asyncio
 import os
 import textwrap
 from typing import List, Optional
-from email.mime import message
 
 from openai import OpenAI
 
 from env import EmailEnv
-from models import predict, EmailAction
+from models import EmailAction
 from grader import TASK_GRADERS
 
 # -------------------------
 # Environment & Model Setup
 # -------------------------
 IMAGE_NAME = os.getenv("IMAGE_NAME") # If you are using docker image 
-API_KEY = os.getenv("API_KEY")
-API_BASE_URL = os.getenv("API_BASE_URL") or "https://router.huggingface.co/v1"
-MODEL_NAME = os.getenv("MODEL_NAME") or "Qwen/Qwen2.5-72B-Instruct"
+HF_TOKEN = os.getenv("HF_TOKEN")
+
+if HF_TOKEN is None:
+    raise ValueError("HF_TOKEN environment variable is required")
+
+API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
+MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-7B-Instruct")
 TASK_NAME = os.getenv("TASK_NAME", "easy")
 BENCHMARK = "email_triage_env"
 
@@ -77,9 +80,9 @@ def log_step(step: int, action: str, reward: float, done: bool, error: Optional[
         flush=True,
     )
 
-def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> None:
+def log_end(success: bool, steps: int, rewards: List[float]) -> None:
     rewards_str = ",".join(f"{r:.2f}" for r in rewards)
-    print(f"[END] success={str(success).lower()} steps={steps} score={score:.3f} rewards={rewards_str}", flush=True)
+    print(f"[END] success={str(success).lower()} steps={steps} rewards={rewards_str}")
 
 
 # -------------------------
@@ -125,7 +128,7 @@ def get_model_message(client: OpenAI, step: int, last_echoed: str, last_reward: 
         print(f"[DEBUG] Model request failed: {exc}", flush=True)
         return "hello"
     
-    
+
 # -------------------------
 # LLM Output → Structured Action
 # -------------------------
@@ -156,8 +159,8 @@ async def main() -> None:
     Run inference for all tasks defined in TASK_GRADERS.
     """
     client = OpenAI(
-        base_url=os.environ.get("API_BASE_URL", "https://router.huggingface.co/v1"),
-        api_key=os.environ.get("API_KEY", "dummy")
+        base_url=API_BASE_URL,
+        api_key=HF_TOKEN
     )
 
     for TASK_NAME in TASK_GRADERS.keys():  
@@ -203,7 +206,7 @@ async def main() -> None:
                 last_email = obs.email_body
                 last_reward = reward
 
-                log_step(step=step, action=f"{action.category}/{action.priority}/{action.reply}", reward=reward, done=done, error=error)
+                log_step(step=step, action=f"{action.category}/{action.priority or 'none'}/{action.reply or 'none'}", reward=reward, done=done, error=error)
 
                 history.append(f"Step {step}: {llm_output!r} -> reward {reward:+.2f}")
 
